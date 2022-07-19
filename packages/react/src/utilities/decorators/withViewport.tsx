@@ -194,10 +194,11 @@ export function withViewport<TProps extends { viewport?: IViewport }, TState>(
     /* Note: using lambda here because decorators don't seem to work in decorators. */
     private _updateViewport = (withForceUpdate?: boolean) => {
       const { viewport } = this.state;
+      const win = getWindow(this._root.current);
       const viewportElement = this._root.current;
       const scrollElement = findScrollableParent(viewportElement) as HTMLElement;
-      const scrollRect = getRect(scrollElement);
-      const clientRect = getRect(viewportElement);
+      const scrollHeight = scrollElement === win ? win.innerHeight : scrollElement && scrollElement.offsetHeight;
+      const clientWidth = viewportElement && viewportElement.clientWidth;
       const updateComponent = () => {
         if (withForceUpdate && this._composedComponentInstance) {
           this._composedComponentInstance.forceUpdate();
@@ -205,15 +206,15 @@ export function withViewport<TProps extends { viewport?: IViewport }, TState>(
       };
 
       const isSizeChanged =
-        (clientRect && clientRect.width) !== viewport!.width || (scrollRect && scrollRect.height) !== viewport!.height;
+        clientWidth !== viewport!.width || scrollHeight !== viewport!.height;
 
-      if (isSizeChanged && this._resizeAttempts < MAX_RESIZE_ATTEMPTS && clientRect && scrollRect) {
+      if (isSizeChanged && this._resizeAttempts < MAX_RESIZE_ATTEMPTS && clientWidth && scrollHeight) {
         this._resizeAttempts++;
         this.setState(
           {
             viewport: {
-              width: clientRect.width,
-              height: scrollRect.height,
+              width: clientWidth,
+              height: scrollHeight,
             },
           },
           () => {
